@@ -286,7 +286,7 @@
       const handleLogin = async () => {
         console.log('Login attempt:', { username, password }); // Debug log
         try {
-          const response = await axios.post('http://localhost:3000/login', { username, password });
+          const response = await axios.post('https://tasksync-backend-81dr.onrender.com/login', { username, password });
           console.log('Login response:', response.data); // Debug log
           setToken(response.data.token);
           localStorage.setItem('token', response.data.token);
@@ -338,7 +338,7 @@
       useEffect(() => {
         if (token) {
           console.log('Fetching tasks with token:', token); // Debug log
-          axios.get('http://localhost:3000/tasks', {
+          axios.get('https://tasksync-backend-81dr.onrender.com/tasks', {
             headers: { Authorization: `Bearer ${token}` },
           }).then((response) => {
             console.log('Tasks fetched:', response.data); // Debug log
@@ -355,7 +355,7 @@
       useEffect(() => {
         if (token) {
           console.log('Connecting Socket.IO with token:', token); // Debug log
-          const socketInstance = io('http://localhost:3000', {
+          const socketInstance = io('https://tasksync-backend-81dr.onrender.com', {
             auth: { token },
           });
           setSocket(socketInstance);
