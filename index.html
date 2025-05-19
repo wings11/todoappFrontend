@@ -1,637 +1,626 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TaskSync - Collaborative Task Management</title>
-  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.7.5/dist/socket.io.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/react-beautiful-dnd@13.1.1/dist/react-beautiful-dnd.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f0f2f5;
-      margin: 0;
-      padding: 0;
-      min-height: 100vh;
-    }
-    .app, .login-container {
-      max-width: 1200px;
-      margin: 20px auto;
-      padding: 0 10px;
-    }
-    h1 {
-      text-align: center;
-      color: #333;
-      font-size: 24px;
-      margin-bottom: 20px;
-    }
-    .login-container {
-      max-width: 400px;
-      background-color: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .login-container input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-    .login-container button {
-      width: 100%;
-      padding: 10px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .login-container button:hover {
-      background-color: #0056b3;
-    }
-    .login-container p {
-      color: red;
-      text-align: center;
-      margin: 10px 0;
-    }
-    .kanban-board {
-      display: flex;
-      gap: 20px;
-      overflow-x: auto;
-      padding-bottom: 10px;
-    }
-    .column {
-      flex: 1;
-      min-width: 250px;
-      background-color: #fff;
-      border-radius: 8px;
-      padding: 10px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .column h2 {
-      font-size: 18px;
-      margin: 0 0 10px;
-      color: #555;
-      text-align: center;
-    }
-    .task {
-      background-color: #f9f9f9;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      padding: 10px;
-      margin-bottom: 10px;
-      cursor: grab;
-    }
-    .task p {
-      margin: 5px 0;
-      font-size: 14px;
-      color: #333;
-    }
-    .task-buttons {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .task-buttons button {
-      padding: 5px 10px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-    .task-buttons .edit {
-      background-color: #ffc107;
-      color: #333;
-    }
-    .task-buttons .edit:hover {
-      background-color: #e0a800;
-    }
-    .task-buttons .remove {
-      background-color: #dc3545;
-      color: white;
-    }
-    .task-buttons .remove:hover {
-      background-color: #c82333;
-    }
-    .task-form, .edit-form {
-      margin-bottom: 20px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      background-color: #fff;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .task-form input, .edit-form input, .task-form textarea, .edit-form textarea {
-     Fh: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 14px;
-      flex: 1;
-      min-width: 150px;
-    }
-    .task-form textarea, .edit-form textarea {
-      min-height: 60px;
-      resize: vertical;
-    }
-    .task-form button, .edit-form button {
-      padding: 8px 16px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .task-form button:hover, .edit-form button:hover {
-      background-color: #0056b3;
-    }
-    .chat-section {
-      margin-top: 20px;
-      background-color: #fff;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .chat-messages {
-      max-height: 200px;
-      overflow-y: auto;
-      margin-bottom: 10px;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    }
-    .chat-messages p {
-      margin: 5px 0;
-      font-size: 14px;
-    }
-    .chat-input {
-      display: flex;
-      gap: 10px;
-    }
-    .chat-input input {
-      flex: 1;
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-    .chat-input button {
-      padding: 8px 16px;
-      background-color: #28a745;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .chat-input button:hover {
-      background-color: #218838;
-    }
-    .notifications {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      max-width: 300px;
-      z-index: 1000;
-    }
-    .notification {
-      background-color: #007bff;
-      color: white;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 4px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-      opacity: 1;
-      transition: opacity 0.5s;
-    }
-    .notification.fade-out {
-      opacity: 0;
-    }
+     <html lang="en">
+     <head>
+       <meta charset="UTF-8">
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <title>TaskSync - Collaborative Task Management</title>
+       <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+       <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+       <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
+       <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.7.5/dist/socket.io.min.js"></script>
+       <script src="https://cdn.jsdelivr.net/npm/react-beautiful-dnd@13.1.1/dist/react-beautiful-dnd.min.js"></script>
+       <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+       <style>
+         body {
+           font-family: Arial, sans-serif;
+           background-color: #f0f2f5;
+           margin: 0;
+           padding: 0;
+           min-height: 100vh;
+         }
+         .app, .login-container {
+           max-width: 1200px;
+           margin: 20px auto;
+           padding: 0 10px;
+         }
+         h1 {
+           text-align: center;
+           color: #333;
+           font-size: 24px;
+           margin-bottom: 20px;
+         }
+         .login-container {
+           max-width: 400px;
+           background-color: #fff;
+           padding: 20px;
+           border-radius: 8px;
+           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+         }
+         .login-container input {
+           width: 100%;
+           padding: 10px;
+           margin: 10px 0;
+           border: 1px solid #ddd;
+           border-radius: 4px;
+           font-size: 14px;
+         }
+         .login-container button {
+           width: 100%;
+           padding: 10px;
+           background-color: #007bff;
+           color: white;
+           border: none;
+           border-radius: 4px;
+           cursor: pointer;
+           font-size: 14px;
+         }
+         .login-container button:hover {
+           background-color: #0056b3;
+         }
+         .login-container p {
+           color: red;
+           text-align: center;
+           margin: 10px 0;
+         }
+         .kanban-board {
+           display: flex;
+           gap: 20px;
+           overflow-x: auto;
+           padding-bottom: 10px;
+         }
+         .column {
+           flex: 1;
+           min-width: 250px;
+           background-color: #fff;
+           border-radius: 8px;
+           padding: 10px;
+           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+         }
+         .column h2 {
+           font-size: 18px;
+           margin: 0 0 10px;
+           color: #555;
+           text-align: center;
+         }
+         .task {
+           background-color: #f9f9f9;
+           border: 1px solid #ddd;
+           border-radius: 4px;
+           padding: 10px;
+           margin-bottom: 10px;
+           cursor: grab;
+         }
+         .task p {
+           margin: 5px 0;
+           font-size: 14px;
+           color: #333;
+         }
+         .task-buttons {
+           display: flex;
+           gap: 10px;
+           margin-top: 10px;
+         }
+         .task-buttons button {
+           padding: 5px 10px;
+           border: none;
+           border-radius: 4px;
+           cursor: pointer;
+           font-size: 12px;
+         }
+         .task-buttons .edit {
+           background-color: #ffc107;
+           color: #333;
+         }
+         .task-buttons .edit:hover {
+           background-color: #e0a800;
+         }
+         .task-buttons .remove {
+           background-color: #dc3545;
+           color: white;
+         }
+         .task-buttons .remove:hover {
+           background-color: #c82333;
+         }
+         .task-form, .edit-form {
+           margin-bottom: 20px;
+           display: flex;
+           flex-wrap: wrap;
+           gap: 10px;
+           background-color: #fff;
+           padding: 15px;
+           border-radius: 8px;
+           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+         }
+         .task-form input, .edit-form input, .task-form textarea, .edit-form textarea {
+           padding: 8px;
+           border: 1px solid #ddd;
+           border-radius: 4px;
+           font-size: 14px;
+           flex: 1;
+           min-width: 150px;
+         }
+         .task-form textarea, .edit-form textarea {
+           min-height: 60px;
+           resize: vertical;
+         }
+         .task-form button, .edit-form button {
+           padding: 8px 16px;
+           background-color: #007bff;
+           color: white;
+           border: none;
+           border-radius: 4px;
+           cursor: pointer;
+           font-size: 14px;
+         }
+         .task-form button:hover, .edit-form button:hover {
+           background-color: #0056b3;
+         }
+         .chat-section {
+           margin-top: 20px;
+           background-color: #fff;
+           padding: 15px;
+           border-radius: 8px;
+           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+         }
+         .chat-messages {
+           max-height: 200px;
+           overflow-y: auto;
+           margin-bottom: 10px;
+           padding: 10px;
+           border: 1px solid #ddd;
+           border-radius: 4px;
+         }
+         .chat-messages p {
+           margin: 5px 0;
+           font-size: 14px;
+         }
+         .chat-input {
+           display: flex;
+           gap: 10px;
+         }
+         .chat-input input {
+           flex: 1;
+           padding: 8px;
+           border: 1px solid #ddd;
+           border-radius: 4px;
+           font-size: 14px;
+         }
+         .chat-input button {
+           padding: 8px 16px;
+           background-color: #28a745;
+           color: white;
+           border: none;
+           border-radius: 4px;
+           cursor: pointer;
+           font-size: 14px;
+         }
+         .chat-input button:hover {
+           background-color: #218838;
+         }
+         .notifications {
+           position: fixed;
+           top: 20px;
+           right: 20px;
+           max-width: 300px;
+           z-index: 1000;
+         }
+         .notification {
+           background-color: #007bff;
+           color: white;
+           padding: 10px;
+           margin-bottom: 10px;
+           border-radius: 4px;
+           box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+           opacity: 1;
+           transition: opacity 0.5s;
+         }
+         .notification.fade-out {
+           opacity: 0;
+         }
+         @media (max-width: 768px) {
+           .app, .login-container {
+             margin: 10px;
+             padding: 0 5px;
+           }
+           h1 {
+             font-size: 20px;
+           }
+           .kanban-board {
+             flex-direction: column;
+             gap: 10px;
+           }
+           .column {
+             min-width: 100%;
+           }
+           .task-form, .edit-form {
+             flex-direction: column;
+           }
+           .task-form input, .edit-form input, .task-form textarea, .edit-form textarea {
+             min-width: 100%;
+           }
+           .notifications {
+             top: 10px;
+             right: 10px;
+             max-width: 90%;
+           }
+           .login-container {
+             max-width: 100%;
+           }
+         }
+         @media (max-width: 480px) {
+           h1 {
+             font-size: 18px;
+           }
+           .column h2 {
+             font-size: 16px;
+           }
+           .task p {
+             font-size: 12px;
+           }
+           .task-form input, .edit-form input, .task-form textarea, .edit-form textarea, .task-form button, .edit-form button {
+             font-size: 12px;
+           }
+           .chat-input input, .chat-input button {
+             font-size: 12px;
+           }
+           .task-buttons button {
+             font-size: 10px;
+             padding: 4px 8px;
+           }
+         }
+       </style>
+     </head>
+     <body>
+       <div id="root"></div>
+       <script type="text/babel">
+         const { useState, useEffect } = React;
+         const { DragDropContext, Droppable, Draggable } = window.ReactBeautifulDnd;
 
-    /* Responsive Design */
-    @media (max-width: 768px) {
-      .app, .login-container {
-        margin: 10px;
-        padding: 0 5px;
-      }
-      h1 {
-        font-size: 20px;
-      }
-      .kanban-board {
-        flex-direction: column;
-        gap: 10px;
-      }
-      .column {
-        min-width: 100%;
-      }
-      .task-form, .edit-form {
-        flex-direction: column;
-      }
-      .task-form input, .edit-form input, .task-form textarea, .edit-form textarea {
-        min-width: 100%;
-      }
-      .notifications {
-        top: 10px;
-        right: 10px;
-        max-width: 90%;
-      }
-      .login-container {
-        max-width: 100%;
-      }
-    }
-    @media (max-width: 480px) {
-      h1 {
-        font-size: 18px;
-      }
-      .column h2 {
-        font-size: 16px;
-      }
-      .task p {
-        font-size: 12px;
-      }
-      .task-form input, .edit-form input, .task-form textarea, .edit-form textarea, .task-form button, .edit-form button {
-        font-size: 12px;
-      }
-      .chat-input input, .chat-input button {
-        font-size: 12px;
-      }
-      .task-buttons button {
-        font-size: 10px;
-        padding: 4px 8px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div id="root"></div>
-  <script type="text/babel">
-    const { useState, useEffect } = React;
-    const { DragDropContext, Droppable, Draggable } = window.ReactBeautifulDnd;
+         const Login = ({ setToken }) => {
+           const [username, setUsername] = useState('');
+           const [password, setPassword] = useState('');
+           const [error, setError] = useState('');
 
-    const Login = ({ setToken }) => {
-      const [username, setUsername] = useState('');
-      const [password, setPassword] = useState('');
-      const [error, setError] = useState('');
+           const handleLogin = async () => {
+             console.log('Login attempt:', { username, password });
+             try {
+               const response = await axios.post('https://tasksync-backend-81dr.onrender.com/login', { username, password });
+               console.log('Login response:', response.data);
+               setToken(response.data.token);
+               localStorage.setItem('token', response.data.token);
+             } catch (err) {
+               console.error('Login error:', err.response?.data);
+               setError(err.response?.data?.error || 'Login failed');
+             }
+           };
 
-      const handleLogin = async () => {
-        console.log('Login attempt:', { username, password }); // Debug log
-        try {
-          const response = await axios.post('https://tasksync-backend-81dr.onrender.com/login', { username, password });
-          console.log('Login response:', response.data); // Debug log
-          setToken(response.data.token);
-          localStorage.setItem('token', response.data.token);
-        } catch (err) {
-          console.error('Login error:', err.response?.data); // Debug log
-          setError(err.response?.data?.error || 'Login failed');
-        }
-      };
+           return (
+             <div className="login-container">
+               <h1>TaskSync Login</h1>
+               <input
+                 type="text"
+                 placeholder="Username"
+                 value={username}
+                 onChange={(e) => setUsername(e.target.value)}
+               />
+               <input
+                 type="password"
+                 placeholder="Password"
+                 value={password}
+                 onChange={(e) => setPassword(e.target.value)}
+               />
+               <button onClick={handleLogin}>Login</button>
+               {error && <p>{error}</p>}
+               <p style={{ fontSize: '12px', textAlign: 'center', marginTop: '10px' }}>
+                 Contact admin to register a new account.
+               </p>
+             </div>
+           );
+         };
 
-      return (
-        <div className="login-container">
-          <h1>TaskSync Login</h1>
-          <input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <button onClick={handleLogin}>Login</button>
-          {error && <p>{error}</p>}
-          <p style={{ fontSize: '12px', textAlign: 'center', marginTop: '10px' }}>
-            Contact admin to register a new account.
-          </p>
-        </div>
-      );
-    };
+         const App = () => {
+           const [tasks, setTasks] = useState({
+             todo: [],
+             inProgress: [],
+             done: [],
+           });
+           const [newTask, setNewTask] = useState({ title: '', description: '', assignee: '', dueDate: '' });
+           const [editTask, setEditTask] = useState(null);
+           const [messages, setMessages] = useState([]);
+           const [newMessage, setNewMessage] = useState('');
+           const [socket, setSocket] = useState(null);
+           const [notifications, setNotifications] = useState([]);
+           const [token, setToken] = useState(localStorage.getItem('token') || '');
 
-    const App = () => {
-      const [tasks, setTasks] = useState({
-        todo: [],
-        inProgress: [],
-        done: [],
-      });
-      const [newTask, setNewTask] = useState({ title: '', description: '', assignee: '', dueDate: '' });
-      const [editTask, setEditTask] = useState(null);
-      const [messages, setMessages] = useState([]);
-      const [newMessage, setNewMessage] = useState('');
-      const [socket, setSocket] = useState(null);
-      const [notifications, setNotifications] = useState([]);
-      const [token, setToken] = useState(localStorage.getItem('token') || '');
+           useEffect(() => {
+             if (token) {
+               console.log('Fetching tasks with token:', token);
+               axios.get('https://tasksync-backend-81dr.onrender.com/tasks', {
+                 headers: { Authorization: `Bearer ${token}` },
+               }).then((response) => {
+                 console.log('Tasks fetched:', response.data);
+                 setTasks(response.data);
+               }).catch((err) => {
+                 console.error('Failed to fetch tasks:', err.response?.data);
+                 setToken('');
+                 localStorage.removeItem('token');
+               });
+             }
+           }, [token]);
 
-      // Fetch tasks on mount
-      useEffect(() => {
-        if (token) {
-          console.log('Fetching tasks with token:', token); // Debug log
-          axios.get('https://tasksync-backend-81dr.onrender.com/tasks', {
-            headers: { Authorization: `Bearer ${token}` },
-          }).then((response) => {
-            console.log('Tasks fetched:', response.data); // Debug log
-            setTasks(response.data);
-          }).catch((err) => {
-            console.error('Failed to fetch tasks:', err.response?.data);
-            setToken('');
-            localStorage.removeItem('token');
-          });
-        }
-      }, [token]);
+           useEffect(() => {
+             if (token) {
+               console.log('Connecting Socket.IO with token:', token);
+               const socketInstance = io('https://tasksync-backend-81dr.onrender.com', {
+                 auth: { token },
+               });
+               setSocket(socketInstance);
 
-      // Initialize Socket.IO
-      useEffect(() => {
-        if (token) {
-          console.log('Connecting Socket.IO with token:', token); // Debug log
-          const socketInstance = io('https://tasksync-backend-81dr.onrender.com', {
-            auth: { token },
-          });
-          setSocket(socketInstance);
+               socketInstance.on('taskUpdate', (updatedTasks) => {
+                 console.log('Received task update:', updatedTasks);
+                 setTasks(updatedTasks);
+                 addNotification('Tasks updated!');
+               });
 
-          socketInstance.on('taskUpdate', (updatedTasks) => {
-            console.log('Received task update:', updatedTasks); // Debug log
-            setTasks(updatedTasks);
-            addNotification('Tasks updated!');
-          });
+               socketInstance.on('newMessage', (message) => {
+                 console.log('Received message:', message);
+                 setMessages((prev) => [...prev, message]);
+               });
 
-          socketInstance.on('newMessage', (message) => {
-            console.log('Received message:', message); // Debug log
-            setMessages((prev) => [...prev, message]);
-          });
+               return () => {
+                 console.log('Disconnecting Socket.IO');
+                 socketInstance.disconnect();
+               };
+             }
+           }, [token]);
 
-          return () => {
-            console.log('Disconnecting Socket.IO'); // Debug log
-            socketInstance.disconnect();
-          };
-        }
-      }, [token]);
+           const addNotification = (message) => {
+             const id = Date.now();
+             setNotifications((prev) => [...prev, { id, message }]);
+             setTimeout(() => {
+               setNotifications((prev) => prev.filter((n) => n.id !== id));
+             }, 3000);
+           };
 
-      // Handle notifications
-      const addNotification = (message) => {
-        const id = Date.now();
-        setNotifications((prev) => [...prev, { id, message }]);
-        setTimeout(() => {
-          setNotifications((prev) => prev.filter((n) => n.id !== id));
-        }, 3000);
-      };
+           const onDragEnd = (result) => {
+             const { source, destination } = result;
+             if (!destination) return;
 
-      // Handle drag-and-drop
-      const onDragEnd = (result) => {
-        const { source, destination } = result;
-        if (!destination) return;
+             const sourceColumn = source.droppableId;
+             const destColumn = destination.droppableId;
+             const updatedTasks = { ...tasks };
+             const [movedTask] = updatedTasks[sourceColumn].splice(source.index, 1);
+             movedTask.status = destColumn;
+             updatedTasks[destColumn].splice(destination.index, 0, movedTask);
+             setTasks(updatedTasks);
 
-        const sourceColumn = source.droppableId;
-        const destColumn = destination.droppableId;
-        const updatedTasks = { ...tasks };
-        const [movedTask] = updatedTasks[sourceColumn].splice(source.index, 1);
-        movedTask.status = destColumn;
-        updatedTasks[destColumn].splice(destination.index, 0, movedTask);
-        setTasks(updatedTasks);
+             if (socket) {
+               console.log('Emitting task update:', updatedTasks);
+               socket.emit('taskUpdate', updatedTasks);
+               addNotification(`Task "${movedTask.title}" moved to ${destColumn}`);
+             }
+           };
 
-        if (socket) {
-          console.log('Emitting task update:', updatedTasks); // Debug log
-          socket.emit('taskUpdate', updatedTasks);
-          addNotification(`Task "${movedTask.title}" moved to ${destColumn}`);
-        }
-      };
+           const addTask = () => {
+             if (!newTask.title || !newTask.assignee || !newTask.dueDate) return;
+             const newTaskObj = {
+               id: Date.now().toString(),
+               title: newTask.title,
+               description: newTask.description,
+               assignee: newTask.assignee,
+               status: 'todo',
+               dueDate: newTask.dueDate,
+             };
+             const updatedTasks = {
+               ...tasks,
+               todo: [...tasks.todo, newTaskObj],
+             };
+             setTasks(updatedTasks);
+             setNewTask({ title: '', description: '', assignee: '', dueDate: '' });
 
-      // Add new task
-      const addTask = () => {
-        if (!newTask.title || !newTask.assignee || !newTask.dueDate) return;
-        const newTaskObj = {
-          id: Date.now().toString(),
-          title: newTask.title,
-          description: newTask.description,
-          assignee: newTask.assignee,
-          status: 'todo',
-          dueDate: newTask.dueDate,
-        };
-        const updatedTasks = {
-          ...tasks,
-          todo: [...tasks.todo, newTaskObj],
-        };
-        setTasks(updatedTasks);
-        setNewTask({ title: '', description: '', assignee: '', dueDate: '' });
+             if (socket) {
+               console.log('Emitting new task:', updatedTasks);
+               socket.emit('taskUpdate', updatedTasks);
+               addNotification(`New task "${newTaskObj.title}" added`);
+             }
+           };
 
-        if (socket) {
-          console.log('Emitting new task:', updatedTasks); // Debug log
-          socket.emit('taskUpdate', updatedTasks);
-          addNotification(`New task "${newTaskObj.title}" added`);
-        }
-      };
+           const startEditTask = (task, column) => {
+             setEditTask({ ...task, column });
+           };
 
-      // Edit task
-      const startEditTask = (task, column) => {
-        setEditTask({ ...task, column });
-      };
+           const saveEditTask = () => {
+             if (!editTask.title || !editTask.assignee || !editTask.dueDate) return;
+             const updatedTasks = { ...tasks };
+             const column = updatedTasks[editTask.column];
+             const index = column.findIndex((t) => t.id === editTask.id);
+             column[index] = { ...editTask, status: editTask.column };
+             setTasks(updatedTasks);
+             setEditTask(null);
 
-      const saveEditTask = () => {
-        if (!editTask.title || !editTask.assignee || !editTask.dueDate) return;
-        const updatedTasks = { ...tasks };
-        const column = updatedTasks[editTask.column];
-        const index = column.findIndex((t) => t.id === editTask.id);
-        column[index] = { ...editTask, status: editTask.column };
-        setTasks(updatedTasks);
-        setEditTask(null);
+             if (socket) {
+               console.log('Emitting edited task:', updatedTasks);
+               socket.emit('taskUpdate', updatedTasks);
+               addNotification(`Task "${editTask.title}" updated`);
+             }
+           };
 
-        if (socket) {
-          console.log('Emitting edited task:', updatedTasks); // Debug log
-          socket.emit('taskUpdate', updatedTasks);
-          addNotification(`Task "${editTask.title}" updated`);
-        }
-      };
+           const removeTask = (taskId, column) => {
+             const updatedTasks = { ...tasks };
+             updatedTasks[column] = updatedTasks[column].filter((t) => t.id !== taskId);
+             setTasks(updatedTasks);
 
-      // Remove task
-      const removeTask = (taskId, column) => {
-        const updatedTasks = { ...tasks };
-        updatedTasks[column] = updatedTasks[column].filter((t) => t.id !== taskId);
-        setTasks(updatedTasks);
+             if (socket) {
+               console.log('Emitting task removal:', updatedTasks);
+               socket.emit('taskUpdate', updatedTasks);
+               addNotification('Task removed');
+             }
+           };
 
-        if (socket) {
-          console.log('Emitting task removal:', updatedTasks); // Debug log
-          socket.emit('taskUpdate', updatedTasks);
-          addNotification('Task removed');
-        }
-      };
+           const sendMessage = () => {
+             if (!newMessage.trim()) return;
+             const message = { id: Date.now(), text: newMessage, sender: 'You' };
+             setMessages((prev) => [...prev, message]);
+             setNewMessage('');
+             if (socket) {
+               console.log('Emitting chat message:', message);
+               socket.emit('sendMessage', message);
+             }
+           };
 
-      // Send chat message
-      const sendMessage = () => {
-        if (!newMessage.trim()) return;
-        const message = { id: Date.now(), text: newMessage, sender: 'You' };
-        setMessages((prev) => [...prev, message]);
-        setNewMessage('');
-        if (socket) {
-          console.log('Emitting chat message:', message); // Debug log
-          socket.emit('sendMessage', message);
-        }
-      };
+           if (!token) {
+             return <Login setToken={setToken} />;
+           }
 
-      if (!token) {
-        return <Login setToken={setToken} />;
-      }
+           return (
+             <div className="app">
+               <h1>TaskSync</h1>
+               <button
+                 style={{ position: 'absolute', top: '20px', left: '20px', padding: '5px 10px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                 onClick={() => {
+                   setToken('');
+                   localStorage.removeItem('token');
+                 }}
+               >
+                 Logout
+               </button>
+               <div className="task-form">
+                 <input
+                   type="text"
+                   placeholder="Task title"
+                   value={newTask.title}
+                   onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                 />
+                 <textarea
+                   placeholder="Task description"
+                   value={newTask.description}
+                   onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                 />
+                 <input
+                   type="text"
+                   placeholder="Assignee"
+                   value={newTask.assignee}
+                   onChange={(e) => setNewTask({ ...newTask, assignee: e.target.value })}
+                 />
+                 <input
+                   type="date"
+                   value={newTask.dueDate}
+                   onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                 />
+                 <button onClick={addTask}>Add Task</button>
+               </div>
+               {editTask && (
+                 <div className="edit-form">
+                   <input
+                     type="text"
+                     placeholder="Task title"
+                     value={editTask.title}
+                     onChange={(e) => setEditTask({ ...editTask, title: e.target.value })}
+                   />
+                   <textarea
+                     placeholder="Task description"
+                     value={editTask.description}
+                     onChange={(e) => setEditTask({ ...editTask, description: e.target.value })}
+                   />
+                   <input
+                     type="text"
+                     placeholder="Assignee"
+                     value={editTask.assignee}
+                     onChange={(e) => setEditTask({ ...editTask, assignee: e.target.value })}
+                   />
+                   <input
+                     type="date"
+                     value={editTask.dueDate}
+                     onChange={(e) => setEditTask({ ...editTask, dueDate: e.target.value })}
+                   />
+                   <button onClick={saveEditTask}>Save</button>
+                   <button
+                     style={{ backgroundColor: '#dc3545' }}
+                     onClick={() => setEditTask(null)}
+                   >
+                     Cancel
+                   </button>
+                 </div>
+               )}
+               <DragDropContext onDragEnd={onDragEnd}>
+                 <div className="kanban-board">
+                   {Object.keys(tasks).map((columnId) => (
+                     <Droppable droppableId={columnId} key={columnId}>
+                       {(provided) => (
+                         <div
+                           className="column"
+                           ref={provided.innerRef}
+                           {...provided.droppableProps}
+                         >
+                           <h2>{columnId.replace(/([A-Z])/g, ' $1').toUpperCase()}</h2>
+                           {tasks[columnId].map((task, index) => (
+                             <Draggable key={task.id} draggableId={task.id} index={index}>
+                               {(provided) => (
+                                 <div
+                                   className="task"
+                                   ref={provided.innerRef}
+                                   {...provided.draggableProps}
+                                   {...provided.dragHandleProps}
+                                 >
+                                   <p><strong>{task.title}</strong></p>
+                                   <p>{task.description}</p>
+                                   <p>Assignee: {task.assignee}</p>
+                                   <p>Due: {task.dueDate}</p>
+                                   <div className="task-buttons">
+                                     <button
+                                       className="edit"
+                                       onClick={() => startEditTask(task, columnId)}
+                                     >
+                                       Edit
+                                     </button>
+                                     <button
+                                       className="remove"
+                                       onClick={() => removeTask(task.id, columnId)}
+                                     >
+                                       Remove
+                                     </button>
+                                   </div>
+                                 </div>
+                               )}
+                             </Draggable>
+                           ))}
+                           {provided.placeholder}
+                         </div>
+                       )}
+                     </Droppable>
+                   ))}
+                 </div>
+               </DragDropContext>
+               <div className="chat-section">
+                 <h2>Team Chat</h2>
+                 <div className="chat-messages">
+                   {messages.map((msg) => (
+                     <p key={msg.id}><strong>{msg.sender}:</strong> {msg.text}</p>
+                   ))}
+                 </div>
+                 <div className="chat-input">
+                   <input
+                     type="text"
+                     placeholder="Type a message..."
+                     value={newMessage}
+                     onChange={(e) => setNewMessage(e.target.value)}
+                     onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                   />
+                   <button onClick={sendMessage}>Send</button>
+                 </div>
+               </div>
+               <div className="notifications">
+                 {notifications.map((note) => (
+                   <div key={note.id} className={`notification ${note.fadeOut ? 'fade-out' : ''}`}>
+                     {note.message}
+                   </div>
+                 ))}
+               </div>
+             </div>
+           );
+         };
 
-      return (
-        <div className="app">
-          <h1>TaskSync</h1>
-          <button
-            style={{ position: 'absolute', top: '20px', left: '20px', padding: '5px 10px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-            onClick={() => {
-              setToken('');
-              localStorage.removeItem('token');
-            }}
-          >
-            Logout
-          </button>
-          <div className="task-form">
-            <input
-              type="text"
-              placeholder="Task title"
-              value={newTask.title}
-              onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-            />
-            <textarea
-              placeholder="Task description"
-              value={newTask.description}
-              onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-            />
-            <input
-              type="text"
-              placeholder="Assignee"
-              value={newTask.assignee}
-              onChange={(e) => setNewTask({ ...newTask, assignee: e.target.value })}
-            />
-            <input
-              type="date"
-              value={newTask.dueDate}
-              onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-            />
-            <button onClick={addTask}>Add Task</button>
-          </div>
-          {editTask && (
-            <div className="edit-form">
-              <input
-                type="text"
-                placeholder="Task title"
-                value={editTask.title}
-                onChange={(e) => setEditTask({ ...editTask, title: e.target.value })}
-              />
-              <textarea
-                placeholder="Task description"
-                value={editTask.description}
-                onChange={(e) => setEditTask({ ...editTask, description: e.target.value })}
-              />
-              <input
-                type="text"
-                placeholder="Assignee"
-                value={editTask.assignee}
-                onChange={(e) => setEditTask({ ...editTask, assignee: e.target.value })}
-              />
-              <input
-                type="date"
-                value={editTask.dueDate}
-                onChange={(e) => setEditTask({ ...editTask, dueDate: e.target.value })}
-              />
-              <button onClick={saveEditTask}>Save</button>
-              <button
-                style={{ backgroundColor: '#dc3545' }}
-                onClick={() => setEditTask(null)}
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-          <DragDropContext onDragEnd={onDragEnd}>
-            <div className="kanban-board">
-              {Object.keys(tasks).map((columnId) => (
-                <Droppable droppableId={columnId} key={columnId}>
-                  {(provided) => (
-                    <div
-                      className="column"
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                    >
-                      <h2>{columnId.replace(/([A-Z])/g, ' $1').toUpperCase()}</h2>
-                      {tasks[columnId].map((task, index) => (
-                        <Draggable key={task.id} draggableId={task.id} index={index}>
-                          {(provided) => (
-                            <div
-                              className="task"
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                            >
-                              <p><strong>{task.title}</strong></p>
-                              <p>{task.description}</p>
-                              <p>Assignee: {task.assignee}</p>
-                              <p>Due: {task.dueDate}</p>
-                              <div className="task-buttons">
-                                <button
-                                  className="edit"
-                                  onClick={() => startEditTask(task, columnId)}
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  className="remove"
-                                  onClick={() => removeTask(task.id, columnId)}
-                                >
-                                  Remove
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              ))}
-            </div>
-          </DragDropContext>
-          <div className="chat-section">
-            <h2>Team Chat</h2>
-            <div className="chat-messages">
-              {messages.map((msg) => (
-                <p key={msg.id}><strong>{msg.sender}:</strong> {msg.text}</p>
-              ))}
-            </div>
-            <div className="chat-input">
-              <input
-                type="text"
-                placeholder="Type a message..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-              />
-              <button onClick={sendMessage}>Send</button>
-            </div>
-          </div>
-          <div className="notifications">
-            {notifications.map((note) => (
-              <div key={note.id} className={`notification ${note.fadeOut ? 'fade-out' : ''}`}>
-                {note.message}
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    };
-
-    ReactDOM.render(<App />, document.getElementById('root'));
-  </script>
-</body>
-</html>
-
+         ReactDOM.render(<App />, document.getElementById('root'));
+       </script>
+     </body>
+     </html>
